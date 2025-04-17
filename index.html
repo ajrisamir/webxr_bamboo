@@ -11,7 +11,7 @@
   <body>
     <a-scene hit-test>
       <a-assets timeout="10000">
-        <a-asset-item id="model4" src="./yogaspa.glb"></a-asset-item>
+        <a-asset-item id="yogaspa" src="./yogaspa.glb"></a-asset-item>
       </a-assets>
     </a-scene>
 
@@ -19,7 +19,7 @@
       var scene = AFRAME.scenes[0];
 
       // Handle asset loading errors
-      var modelAsset = document.querySelector('#model4');
+      var modelAsset = document.querySelector('#yogaspa');
       modelAsset.addEventListener('error', function(e) {
         console.error('Error loading model:', e);
         // Fallback to a basic shape if model fails to load
@@ -29,7 +29,7 @@
       var newObject = function(data) {
         var entity = data.detail;
 
-        entity.setAttribute('gltf-model', '#model4');
+        entity.setAttribute('gltf-model', '#yogaspa');
         entity.setAttribute('scale', '1 1 1');
         entity.setAttribute('material', {
           shader: 'standard',
