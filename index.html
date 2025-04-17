@@ -13,6 +13,9 @@
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
   </head>
   <body>
+    <!-- Tambahkan elemen video untuk MediaPipe -->
+    <video id="input-video" style="display: none;"></video>
+    
     <a-scene hit-test>
       <a-assets timeout="10000">
         <a-asset-item id="yogaspa" src="./yogaspa.glb"></a-asset-item>
@@ -89,12 +92,13 @@
       });
 
       // Start camera feed for hand tracking
-      const camera = new Camera(document.querySelector('video'), {
-        onFrame: async () => {
-          await hands.send({image: document.querySelector('video')});
-        },
-        width: 1280,
-        height: 720
+      // Perbaiki inisialisasi kamera
+      const camera = new Camera(document.querySelector('#input-video'), {
+          onFrame: async () => {
+              await hands.send({image: document.querySelector('#input-video')});
+          },
+          width: 1280,
+          height: 720
       });
       camera.start();
 
