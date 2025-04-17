@@ -1,80 +1,59 @@
 <!DOCTYPE html>
 <html>
-<head>
-  <title>A-Frame / WebXR / AR / Hit Test dengan Hand Tracking</title>
-  <meta name="description" content="Hello, WebVR! - A-Frame dengan Hand Tracking">
-  <script src='./aframe-master.js'></script>
-  <script src='./three.xr.js'></script>
-  <script src='./aframe-xr.js'></script>
-  <script src='./hit-test.js'></script>
-  <script src="https://cdn.jsdelivr.net/npm/aframe-extras@6.1.1/dist/aframe-extras.min.js"></script>
-</head>
-<body>
-  <a-scene hit-test="enabled: true">
-    <a-assets timeout="10000">
-      <a-asset-item id="yogaspa" src="./yogaspa.glb"></a-asset-item>
-      <a-asset-item id="hand-left-model" src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@v6.1.1/assets/models/hand-left.glb"></a-asset-item>
-      <a-asset-item id="hand-right-model" src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@v6.1.1/assets/models/hand-right.glb"></a-asset-item>
-    </a-assets>
+  <head>
+    <title>A-Frame / WebXR / AR / Hit Test</title>
+    <meta name="description" content="Hello, WebVR! - A-Frame">
+    <script src='./aframe-master.js'></script>
+    <script src='./three.xr.js'></script>
+    <script src='./aframe-xr.js'></script>
+    <script src='./hit-test.js'></script>
+  </head>
+  <body>
+    <a-scene hit-test>
+      <a-assets timeout="10000">
+        <a-asset-item id="yogaspa" src="./yogaspa.glb"></a-asset-item>
+      </a-assets>
+    </a-scene>
 
-    <a-entity id="left-hand" hand-tracking-controls="hand: left;"></a-entity>
+    <script>
+      var scene = AFRAME.scenes[0];
 
-    <a-entity id="right-hand" hand-tracking-controls="hand: right;"></a-entity>
-  </a-scene>
-
-  <script>
-    var scene = AFRAME.scenes[0];
-
-    // Handle asset loading errors
-    var modelAsset = document.querySelector('#yogaspa');
-    modelAsset.addEventListener('error', function(e) {
-      console.error('Error loading model:', e);
-      // Fallback to a basic shape if model fails to load
-      createFallbackObject();
-    });
-
-    var newObject = function(data) {
-      var entity = data.detail;
-
-      entity.setAttribute('gltf-model', '#yogaspa');
-      entity.setAttribute('scale', '0.1 0.1 0.1');
-      entity.setAttribute('material', {
-        shader: 'standard',
-        fog: false
+      // Handle asset loading errors
+      var modelAsset = document.querySelector('#yogaspa');
+      modelAsset.addEventListener('error', function(e) {
+        console.error('Error loading model:', e);
+        // Fallback to a basic shape if model fails to load
+        createFallbackObject();
       });
 
-      scene.appendChild(entity);
-    }
+      var newObject = function(data) {
+        var entity = data.detail;
 
-    function createFallbackObject(data) {
-      var entity = data.detail;
-      entity.setAttribute('geometry', {
-        primitive: 'box',
-        width: 0.1,
-        height: 0.1,
-        depth: 0.1
-      });
-      entity.setAttribute('material', {
-        color: 'red'
-      });
-      scene.appendChild(entity);
-    }
+        entity.setAttribute('gltf-model', '#yogaspa');
+        entity.setAttribute('scale', '0.1 0.1 0.1');
+        entity.setAttribute('material', {
+          shader: 'standard',
+          fog: false
+        });     
 
-    scene.addEventListener('newAnchoredEntity', newObject);
-
-    // Opsi untuk menambahkan visualisasi tangan (jika model tersedia)
-    AFRAME.registerComponent('hand-visuals', {
-      init: function () {
-        const leftHand = document.getElementById('left-hand');
-        const rightHand = document.getElementById('right-hand');
-
-        leftHand.setAttribute('gltf-model', '#hand-left-model');
-        rightHand.setAttribute('gltf-model', '#hand-right-model');
+        scene.appendChild(entity);
       }
-    });
 
-    // Tambahkan komponen visualisasi tangan ke scene
-    scene.setAttribute('hand-visuals', '');
-  </script>
-</body>
+      function createFallbackObject(data) {
+        var entity = data.detail;
+        entity.setAttribute('geometry', {
+          primitive: 'box',
+          width: 0.1,
+          height: 0.1,
+          depth: 0.1
+        });
+        entity.setAttribute('material', {
+          color: 'red'
+        });
+        scene.appendChild(entity);
+      }
+
+      scene.addEventListener('newAnchoredEntity', newObject);
+    </script>
+  </body>
 </html>
