@@ -7,12 +7,30 @@
     <script src='./three.xr.js'></script>
     <script src='./aframe-xr.js'></script>
     <script src='./hit-test.js'></script>
+    <!-- Tambahan script untuk MediaPipe -->
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
   </head>
   <body>
+    <!-- Tambahan elemen untuk hand tracking -->
+    <video id="video" style="display: none"></video>
+    <canvas id="output_canvas" style="position: absolute; left: 0; top: 0; z-index: 1;"></canvas>
+    <button id="ar-button" style="position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 2;">Start AR</button>
+
     <a-scene hit-test>
       <a-assets timeout="10000">
         <a-asset-item id="yogaspa" src="./yogaspa.glb"></a-asset-item>
       </a-assets>
+
+      <!-- Tambahan entity untuk model yang akan dikontrol dengan hand tracking -->
+      <a-entity
+        id="model"
+        gltf-model="#yogaspa"
+        scale="0.1 0.1 0.1"
+        position="0 0 0"
+        material="shader: standard; fog: false">
+      </a-entity>
     </a-scene>
 
     <script>
@@ -57,3 +75,5 @@
     </script>
   </body>
 </html>
+
+
