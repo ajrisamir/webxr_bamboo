@@ -13,8 +13,8 @@
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
   </head>
   <body>
-    <!-- Tambahkan elemen video untuk MediaPipe -->
     <video id="input-video" style="display: none;"></video>
+    <canvas id="output_canvas" style="position: fixed; top: 0; left: 0; pointer-events: none;"></canvas>
     
     <a-scene hit-test>
       <a-assets timeout="10000">
@@ -24,97 +24,133 @@
 
     <script>
       var scene = AFRAME.scenes[0];
+      const canvasElement = document.getElementById('output_canvas');
+      const canvasCtx = canvasElement.getContext('2d');
+      const videoElement = document.getElementById('input-video');
 
-      // Handle asset loading errors
-      var modelAsset = document.querySelector('#yogaspa');
-      modelAsset.addEventListener('error', function(e) {
-        console.error('Error loading model:', e);
-        // Fallback to a basic shape if model fails to load
-        createFallbackObject();
-      });
-
-      var newObject = function(data) {
-        var entity = data.detail;
-
-        entity.setAttribute('gltf-model', '#yogaspa');
-        entity.setAttribute('scale', '0.1 0.1 0.1');
-        entity.setAttribute('material', {
-          shader: 'standard',
-          fog: false
-        });     
-        
-        // Add class for hand interaction
-        entity.setAttribute('class', 'interactive');
-        entity.setAttribute('position', '0 0 0');
-
-        scene.appendChild(entity);
-        
-        // Store reference to manipulate later
-        window.yogaspaEntity = entity;
+      function adjustVideoCanvasSize() {
+          const width = window.innerWidth;
+          const height = window.innerHeight;
+          videoElement.width = width;
+          videoElement.height = height;
+          canvasElement.width = width;
+          canvasElement.height = height;
       }
 
-      // Initialize MediaPipe Hands
-      const hands = new Hands({locateFile: (file) => {
-        return `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`;
-      }});
+      window.addEventListener('resize', adjustVideoCanvasSize);
+      adjustVideoCanvasSize();
+
+      let previousLandmarks = null;
+      let previousScale = null;
+      let previousPosition = null;
+
+      function smoothLandmarks(landmarks) {
+          if (!previousLandmarks) {
+              previousLandmarks = landmarks;
+              return landmarks;
+          }
+
+          const smoothedLandmarks = landmarks.map((landmark, index) => {
+              const previousLandmark = previousLandmarks[index];
+              if (!previousLandmark) return landmark;
+
+              return {
+                  x: landmark.x * 0.3 + previousLandmark.x * 0.7,
+                  y: landmark.y * 0.3 + previousLandmark.y * 0.7,
+                  z: landmark.z * 0.3 + previousLandmark.z * 0.7
+              };
+          });
+
+          previousLandmarks = smoothedLandmarks;
+          return smoothedLandmarks;
+      }
+
+      function lerp(a, b, t) {
+          return a * (1 - t) + b * t;
+      }
+
+      var newObject = function(data) {
+          var entity = data.detail;
+          entity.setAttribute('gltf-model', '#yogaspa');
+          entity.setAttribute('scale', '0.1 0.1 0.1');
+          entity.setAttribute('class', 'interactive');
+          entity.setAttribute('position', '0 0 0');
+          scene.appendChild(entity);
+          window.yogaspaEntity = entity;
+      }
+
+      const hands = new Hands({
+          locateFile: (file) => {
+              return `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`;
+          }
+      });
 
       hands.setOptions({
-        maxNumHands: 2,
-        modelComplexity: 1,
-        minDetectionConfidence: 0.5,
-        minTrackingConfidence: 0.5
+          maxNumHands: 1,
+          modelComplexity: 1,
+          minDetectionConfidence: 0.5,
+          minTrackingConfidence: 0.5
       });
 
-      hands.onResults(results => {
-        if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
-          const hand = results.multiHandLandmarks[0];
-          
-          // Get index finger tip position (landmark 8)
-          const indexTip = hand[8];
-          
-          if (window.yogaspaEntity) {
-            // Map hand position to object manipulation
-            // Scale based on distance between thumb and index finger
-            const thumbTip = hand[4];
-            const distance = Math.sqrt(
-              Math.pow(thumbTip.x - indexTip.x, 2) +
-              Math.pow(thumbTip.y - indexTip.y, 2)
-            );
-            
-            // Update object position based on hand movement
-            window.yogaspaEntity.setAttribute('position', {
-              x: (indexTip.x - 0.5) * 2,
-              y: (-indexTip.y + 0.5) * 2,
-              z: -distance * 2
-            });
+      hands.onResults((results) => {
+          canvasCtx.save();
+          canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+          canvasCtx.drawImage(results.image, 0, 0);
+
+          if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+              const landmarks = smoothLandmarks(results.multiHandLandmarks[0]);
+              
+              if (window.yogaspaEntity && landmarks[8] && landmarks[4]) {
+                  const indexFinger = landmarks[8];
+                  const thumb = landmarks[4];
+
+                  const distance = Math.sqrt(
+                      Math.pow(indexFinger.x - thumb.x, 2) + 
+                      Math.pow(indexFinger.y - thumb.y, 2)
+                  );
+
+                  const targetScale = distance * 5;
+                  const smoothedScale = lerp(previousScale || targetScale, targetScale, 0.2);
+                  previousScale = smoothedScale;
+
+                  const aframeX = (indexFinger.x - 0.5) * 2;
+                  const aframeY = -(indexFinger.y - 0.5) * 2;
+                  const aframeZ = -landmarks[8].z * 2;
+
+                  previousPosition = previousPosition || { x: aframeX, y: aframeY, z: aframeZ };
+                  const smoothX = lerp(previousPosition.x, aframeX, 0.2);
+                  const smoothY = lerp(previousPosition.y, aframeY, 0.2);
+                  const smoothZ = lerp(previousPosition.z, aframeZ, 0.2);
+                  previousPosition = { x: smoothX, y: smoothY, z: smoothZ };
+
+                  window.yogaspaEntity.setAttribute('scale', `${smoothedScale} ${smoothedScale} ${smoothedScale}`);
+                  window.yogaspaEntity.setAttribute('position', `${smoothX} ${smoothY} ${smoothZ}`);
+
+                  const deltaX = thumb.x - indexFinger.x;
+                  const deltaY = thumb.y - indexFinger.y;
+                  const deltaZ = thumb.z - indexFinger.z;
+
+                  const rotationX = Math.atan2(deltaY, deltaZ) * (180 / Math.PI);
+                  const rotationY = Math.atan2(deltaX, deltaZ) * (180 / Math.PI);
+                  window.yogaspaEntity.setAttribute('rotation', `${rotationX} ${rotationY} 0`);
+              }
           }
-        }
+          canvasCtx.restore();
       });
 
-      // Start camera feed for hand tracking
-      // Perbaiki inisialisasi kamera
-      const camera = new Camera(document.querySelector('#input-video'), {
+      const camera = new Camera(videoElement, {
           onFrame: async () => {
-              await hands.send({image: document.querySelector('#input-video')});
+              await hands.send({ image: videoElement });
           },
+          facingMode: "environment",
           width: 1280,
           height: 720
       });
-      camera.start();
 
-      function createFallbackObject(data) {
-        var entity = data.detail;
-        entity.setAttribute('geometry', {
-          primitive: 'box',
-          width: 0.1,
-          height: 0.1,
-          depth: 0.1
-        });
-        entity.setAttribute('material', {
-          color: 'red'
-        });
-        scene.appendChild(entity);
-      }
+      camera.start().catch(error => {
+          console.error("Error accessing camera:", error);
+          alert("Kamera tidak dapat diakses. Pastikan kamera terhubung dan izin diberikan.");
+      });
 
       scene.addEventListener('newAnchoredEntity', newObject);
     </script>
