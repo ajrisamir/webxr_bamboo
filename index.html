@@ -7,6 +7,10 @@
     <script src='./three.xr.js'></script>
     <script src='./aframe-xr.js'></script>
     <script src='./hit-test.js'></script>
+    <!-- Add MediaPipe dependencies -->
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
   </head>
   <body>
     <a-scene hit-test>
@@ -35,9 +39,64 @@
           shader: 'standard',
           fog: false
         });     
+        
+        // Add class for hand interaction
+        entity.setAttribute('class', 'interactive');
+        entity.setAttribute('position', '0 0 0');
 
         scene.appendChild(entity);
+        
+        // Store reference to manipulate later
+        window.yogaspaEntity = entity;
       }
+
+      // Initialize MediaPipe Hands
+      const hands = new Hands({locateFile: (file) => {
+        return `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`;
+      }});
+
+      hands.setOptions({
+        maxNumHands: 2,
+        modelComplexity: 1,
+        minDetectionConfidence: 0.5,
+        minTrackingConfidence: 0.5
+      });
+
+      hands.onResults(results => {
+        if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+          const hand = results.multiHandLandmarks[0];
+          
+          // Get index finger tip position (landmark 8)
+          const indexTip = hand[8];
+          
+          if (window.yogaspaEntity) {
+            // Map hand position to object manipulation
+            // Scale based on distance between thumb and index finger
+            const thumbTip = hand[4];
+            const distance = Math.sqrt(
+              Math.pow(thumbTip.x - indexTip.x, 2) +
+              Math.pow(thumbTip.y - indexTip.y, 2)
+            );
+            
+            // Update object position based on hand movement
+            window.yogaspaEntity.setAttribute('position', {
+              x: (indexTip.x - 0.5) * 2,
+              y: (-indexTip.y + 0.5) * 2,
+              z: -distance * 2
+            });
+          }
+        }
+      });
+
+      // Start camera feed for hand tracking
+      const camera = new Camera(document.querySelector('video'), {
+        onFrame: async () => {
+          await hands.send({image: document.querySelector('video')});
+        },
+        width: 1280,
+        height: 720
+      });
+      camera.start();
 
       function createFallbackObject(data) {
         var entity = data.detail;
