@@ -11,6 +11,24 @@
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
+    <style>
+        #video, #output_canvas {
+            width: 100vw;
+            height: 100vh;
+            object-fit: cover;
+        }
+        #ar-button {
+            padding: 10px 20px;
+            background: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        #ar-button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+    </style>
   </head>
   <body>
     <!-- Tambahan elemen untuk hand tracking -->
@@ -28,7 +46,7 @@
         id="model"
         gltf-model="#yogaspa"
         scale="0.1 0.1 0.1"
-        position="0 0 0"
+        position="0 1.5 -1"
         material="shader: standard; fog: false">
       </a-entity>
     </a-scene>
@@ -40,25 +58,14 @@
       var modelAsset = document.querySelector('#yogaspa');
       modelAsset.addEventListener('error', function(e) {
         console.error('Error loading model:', e);
-        // Fallback to a basic shape if model fails to load
         createFallbackObject();
       });
 
-      var newObject = function(data) {
-        var entity = data.detail;
+      // Menghapus fungsi newObject karena kita akan menggunakan hand tracking
+      // untuk mengontrol model yang sudah ada
 
-        entity.setAttribute('gltf-model', '#yogaspa');
-        entity.setAttribute('scale', '0.1 0.1 0.1');
-        entity.setAttribute('material', {
-          shader: 'standard',
-          fog: false
-        });     
-
-        scene.appendChild(entity);
-      }
-
-      function createFallbackObject(data) {
-        var entity = data.detail;
+      function createFallbackObject() {
+        var entity = document.createElement('a-entity');
         entity.setAttribute('geometry', {
           primitive: 'box',
           width: 0.1,
@@ -71,9 +78,10 @@
         scene.appendChild(entity);
       }
 
-      scene.addEventListener('newAnchoredEntity', newObject);
+      // Hapus event listener untuk newAnchoredEntity karena tidak diperlukan lagi
+      // scene.addEventListener('newAnchoredEntity', newObject);
     </script>
-    <!-- Tambahkan script app.js -->
+    <!-- Tambahkan script app.js dengan path yang benar -->
     <script src="./app.js"></script>
   </body>
 </html>
