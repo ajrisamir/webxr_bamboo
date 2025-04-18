@@ -17,6 +17,7 @@
         <a-asset-item id="model4" src="./model4.glb"></a-asset-item>
         <a-asset-item id="model5" src="./model5.glb"></a-asset-item>
         <a-asset-item id="model6" src="./model6.glb"></a-asset-item>
+        <a-asset-item id="model7" src="./model7.glb"></a-asset-item>
       </a-assets>
     </a-scene>
 
@@ -24,7 +25,7 @@
       var scene = AFRAME.scenes[0];
       var currentModelIndex = 0;
       var currentEntity = null;
-      const models = ['#model1', '#model2', '#model3', '#model4', '#model5', '#model6'];
+      const models = ['#model1', '#model2', '#model3', '#model4', '#model5', '#model6', '#model7'];
 
       var modelAsset = document.querySelector('#model1');
       modelAsset.addEventListener('error', function(e) {
